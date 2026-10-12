@@ -4,6 +4,8 @@ Boutique en ligne **de démonstration** spécialisée dans l'électronique et le
 
 L'application est développée avec Next.js et TypeScript, conteneurisée avec Docker, publiée sur Docker Hub (`leti1006/ivoiremarket:v1`) et déployée sur une instance AWS EC2 par simple `docker pull`.
 
+🌐 **Application en ligne : http://13.60.255.43** (instance AWS EC2, région eu-north-1).
+
 > ⚠️ **Démonstration uniquement** : les produits, prix, stocks et promotions sont fictifs. Aucune vente, aucun paiement et aucune livraison ne sont effectués, et aucune donnée saisie n'est conservée.
 
 ---
@@ -252,6 +254,24 @@ ssh -i ~/.ssh/ivoiremarket-key.pem ubuntu@<IP_PUBLIQUE_EC2> "chmod +x ec2-deploy
 
 Enfin, ouvrir `http://<IP_PUBLIQUE_EC2>` dans un navigateur.
 
+### 11.4 Déploiement réellement effectué
+
+| Élément | Valeur |
+|---|---|
+| Région | eu-north-1 (Stockholm) |
+| Instance | `ivoiremarket`, t3.micro, Ubuntu 24.04.5 LTS, x86_64 |
+| IP publique | `13.60.255.43` |
+| Groupe de sécurité | `ivoiremarket-sg` : 80/tcp depuis 0.0.0.0/0 ; 22/tcp depuis une seule IP (/32) |
+| Clé SSH | paire ed25519 générée en local ; seule la clé **publique** a été importée dans AWS (`ivoiremarket-key`) |
+| Méthode | AWS CloudShell + AWS CLI (`import-key-pair`, `create-security-group`, `run-instances`) ; un script *user data* installe Docker puis exécute `docker pull` et `docker run -p 80:3000` au premier démarrage |
+
+Vérifications effectuées :
+
+- `docker images` sur EC2 affiche l'ID `aa7562f60d36`, **identique** à l'image testée en local : aucun build sur le serveur ;
+- `docker ps` affiche `Up (healthy)` et `0.0.0.0:80->3000/tcp` ; `docker exec ivoiremarket whoami` renvoie `nextjs` ;
+- `http://13.60.255.43:3000` est injoignable depuis Internet, ce qui est attendu puisque le port 3000 n'est pas exposé ;
+- les 17 tests Playwright passent contre `BASE_URL=http://13.60.255.43`.
+
 ## 12. Ports utilisés
 
 | Port | Où | Exposé à Internet | Rôle |
@@ -308,7 +328,10 @@ Un assistant IA (Claude Code) a été utilisé pour générer et vérifier une p
 | `tsc` ne connaît pas `PageProps<"/catalogue">` | Les types de routes sont générés par Next.js | Script `typecheck` = `next typegen && tsc --noEmit` |
 | Une URL de produit inconnue renvoyait HTTP 200 au lieu de 404 | Avec le streaming, le statut 200 est déjà envoyé quand `notFound()` s'exécute | Vérification du slug dans `src/proxy.ts`, avant le rendu |
 | Tests E2E : deux éléments trouvés au lieu d'un | Next.js garde la page précédente montée mais masquée (`<Activity>`) | Les tests ne ciblent que les éléments visibles |
-| _à compléter (déploiement EC2…)_ | | |
+| Le panneau de navigateur, trop petit, rendait la console EC2 difficile à manipuler | Formulaires de la console dans une iframe peu lisible | Création des ressources en ligne de commande via AWS CloudShell (AWS CLI), plus reproductible |
+| Ne pas faire transiter de clé privée | Le téléchargement d'un `.pem` expose la clé | Clé générée en local (`ssh-keygen`), seule la clé publique est importée |
+| Choix de l'instance | L'image Docker est construite pour `amd64` | Instance x86_64 (t3.micro), pas de t4g (ARM) |
+| _à compléter par le groupe_ | | |
 
 ## 17. Procédure de démonstration
 
