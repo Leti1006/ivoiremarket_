@@ -127,8 +127,8 @@ Principes :
 ## 6. Installation et développement
 
 ```bash
-git clone https://github.com/<UTILISATEUR_GITHUB>/ivoiremarket.git
-cd ivoiremarket
+git clone https://github.com/Leti1006/ivoiremarket_.git
+cd ivoiremarket_
 npm ci            # installe les versions exactes du package-lock.json
 npm run dev       # http://localhost:3000
 ```
