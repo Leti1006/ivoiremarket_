@@ -1,69 +1,190 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Banknote, ShieldCheck, Tags, Truck } from "lucide-react";
+import { buttonClasses } from "@/components/ui/button";
+import { categories } from "@/data/categories";
+import { FREE_DELIVERY_THRESHOLD } from "@/data/delivery-zones";
+import { CATEGORY_ICONS } from "@/features/products/components/category-icon";
+import { ProductGrid } from "@/features/products/components/product-card";
+import { ProductVisual } from "@/features/products/components/product-visual";
+import {
+  countByCategory,
+  getFeaturedProducts,
+  getProductBySlug,
+  getPromotions,
+} from "@/features/products/queries";
+import { formatPrice } from "@/lib/format";
 
-export default function Home() {
+const ADVANTAGES = [
+  {
+    icon: Truck,
+    title: "Livraison partout en Côte d'Ivoire",
+    text: `Abidjan à partir de ${formatPrice(2_000)}, offerte dès ${formatPrice(FREE_DELIVERY_THRESHOLD)} d'achat.`,
+  },
+  {
+    icon: Banknote,
+    title: "Paiement à la livraison",
+    text: "Aucune carte bancaire n'est demandée : vous payez à la réception.",
+  },
+  {
+    icon: Tags,
+    title: "Prix clairs en FCFA",
+    text: "Frais de livraison affichés avant validation, sans surprise.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Données minimales",
+    text: "Seuls un nom, un téléphone et une adresse sont demandés.",
+  },
+];
+
+function SectionHeading({ title, subtitle, href, linkLabel }: {
+  title: string;
+  subtitle?: string;
+  href?: string;
+  linkLabel?: string;
+}) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
+        {subtitle && <p className="mt-1 text-muted">{subtitle}</p>}
+      </div>
+      {href && (
+        <Link href={href} className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800">
+          {linkLabel} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  const featured = getFeaturedProducts(8);
+  const promotions = getPromotions(4);
+  const counts = countByCategory();
+  const heroProducts = ["apple-macbook-air-m3", "samsung-galaxy-a55-128go", "jbl-tune-520bt"]
+    .map(getProductBySlug)
+    .filter((p) => p !== undefined);
+
+  return (
+    <>
+      {/* --- Bannière principale --- */}
+      <section className="relative overflow-hidden bg-brand-900 text-white">
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }}
+          aria-hidden="true"
+        />
+        <div className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-accent-500/25 blur-3xl" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:py-20 lg:grid-cols-2">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-accent-100">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent-500" aria-hidden="true" />
+              Électronique & high-tech à Abidjan
+            </p>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl">
+              La technologie qui vous ressemble,{" "}
+              <span className="text-accent-500">au juste prix en FCFA.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg text-brand-100/90">
+              Smartphones, ordinateurs, audio et équipements réseau : comparez, choisissez et
+              commandez en quelques clics, puis payez à la livraison.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/catalogue" className={buttonClasses({ variant: "accent", size: "lg" })}>
+                Découvrir le catalogue <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/catalogue?categorie=smartphones"
+                className={buttonClasses({ size: "lg", className: "border border-white/25 bg-white/10 hover:bg-white/20" })}
+              >
+                Voir les smartphones
+              </Link>
+            </div>
+          </div>
+
+          <div className="relative mx-auto grid w-full max-w-md grid-cols-2 gap-4 lg:max-w-lg" aria-hidden="true">
+            {heroProducts[0] && (
+              <ProductVisual product={heroProducts[0]} size="lg" className="col-span-2 aspect-[16/10] shadow-lift" />
+            )}
+            {heroProducts.slice(1).map((p) => (
+              <ProductVisual key={p.id} product={p} className="shadow-lift" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-7xl space-y-16 px-4 py-14 sm:space-y-20">
+        {/* --- Catégories --- */}
+        <section>
+          <SectionHeading title="Nos catégories" subtitle="Tout l'équipement numérique, au même endroit." />
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {categories.map((category) => {
+              const Icon = CATEGORY_ICONS[category.id];
+              return (
+                <li key={category.id}>
+                  <Link
+                    href={`/catalogue?categorie=${category.id}`}
+                    className="group flex h-full flex-col gap-3 rounded-2xl border border-line bg-card p-4 shadow-card transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-lift"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-colors group-hover:bg-brand-700 group-hover:text-white">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-ink">{category.name}</span>
+                      <span className="text-sm text-muted">
+                        {counts[category.id] ?? 0} produit{(counts[category.id] ?? 0) > 1 ? "s" : ""}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {/* --- Produits mis en avant --- */}
+        <section>
+          <SectionHeading
+            title="Sélection du moment"
+            subtitle="Une sélection de notre catalogue pour les études, le bureau et la maison."
+            href="/catalogue"
+            linkLabel="Tout voir"
+          />
+          <ProductGrid products={featured} />
+        </section>
+
+        {/* --- Promotions (démonstration) --- */}
+        <section className="rounded-3xl bg-accent-50 p-5 sm:p-8">
+          <SectionHeading
+            title="Promotions"
+            subtitle="Offres de démonstration : les prix barrés sont fictifs."
+            href="/catalogue?tri=prix-asc"
+            linkLabel="Voir les petits prix"
+          />
+          <ProductGrid products={promotions} />
+        </section>
+
+        {/* --- Avantages --- */}
+        <section aria-labelledby="avantages-title">
+          <h2 id="avantages-title" className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+            Pourquoi commander sur IvoireMarket ?
+          </h2>
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {ADVANTAGES.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="rounded-2xl border border-line bg-card p-5 shadow-card">
+                <Icon className="h-6 w-6 text-accent-600" aria-hidden="true" />
+                <h3 className="mt-3 font-semibold text-ink">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-muted">
+            Conditions de démonstration : ces engagements décrivent le fonctionnement simulé de la
+            boutique et ne correspondent à aucun service commercial réel.
+          </p>
+        </section>
+      </div>
+    </>
   );
 }
