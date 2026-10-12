@@ -1,0 +1,80 @@
+# Intégration continue : à chaque push ou pull request sur main, GitHub
+# vérifie automatiquement la qualité du code, les tests et le build Docker.
+# Ce workflow ne publie rien : la publication sur Docker Hub reste manuelle.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, types, tests et build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Tests unitaires
+        run: npm run test
+
+      - name: Build de production
+        run: npm run build
+
+      - name: Installer Chromium pour Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests de parcours (Playwright)
+        run: npm run test:e2e
+
+      - name: Rapport Playwright en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+
+  docker:
+    name: Build de l'image Docker
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Construire l'image (sans la publier)
+        run: docker build -t ivoiremarket:ci .
+
+      - name: Démarrer le conteneur et vérifier la réponse HTTP
+        run: |
+          docker run -d --name ivoiremarket -p 8080:3000 ivoiremarket:ci
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:8080/; then echo "OK"; exit 0; fi
+            sleep 2
+          done
+          docker logs ivoiremarket
+          exit 1
