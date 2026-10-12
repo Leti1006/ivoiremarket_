@@ -148,6 +148,8 @@ npm run build && npm run test:e2e # parcours navigateur (desktop + mobile)
 BASE_URL=http://localhost:8080 npm run test:e2e
 ```
 
+**Intégration continue** : le workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) exécute à chaque push sur `main` le lint, la vérification des types, les tests unitaires, le build, les tests Playwright, puis construit l'image Docker et vérifie que le conteneur répond. Il ne publie rien : la publication sur Docker Hub reste manuelle.
+
 Couverture des tests :
 
 - **Unitaires (41)** : formatage FCFA, validation des paramètres d'URL, recherche, filtres et tri, logique du panier (stock, quantité maximale, totaux), stockage corrompu, validation du téléphone ivoirien, calcul de commande, Server Action (prix client ignorés, panier vide).
@@ -283,7 +285,7 @@ Aucun autre port n'est ouvert dans le groupe de sécurité.
 - HTTP uniquement (pas de nom de domaine).
 - Image construite pour `amd64` uniquement.
 
-Améliorations possibles : base de données (PostgreSQL/RDS), administration du catalogue, vraies photos, paiement Mobile Money en mode test, HTTPS via un nom de domaine et Nginx ou un Load Balancer, pipeline CI/CD GitHub Actions (tests, build, push automatique).
+Améliorations possibles : base de données (PostgreSQL/RDS), administration du catalogue, vraies photos, paiement Mobile Money en mode test, HTTPS via un nom de domaine et Nginx ou un Load Balancer, publication automatique de l'image depuis la CI (aujourd'hui la CI vérifie mais ne publie pas).
 
 ## 15. Répartition du travail
 
