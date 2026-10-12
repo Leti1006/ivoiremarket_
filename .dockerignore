@@ -1,0 +1,35 @@
+# Fichiers exclus du contexte de build Docker :
+# images plus petites, builds plus rapides et aucun secret copié par erreur.
+
+# Dépendances et builds locaux (réinstallés / recompilés dans l'image)
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Résultats de tests
+test-results
+playwright-report
+blob-report
+
+# Git, éditeurs et outils
+.git
+.gitignore
+.vscode
+.idea
+.claude
+*.log
+.DS_Store
+
+# Secrets et configuration locale : ne doivent JAMAIS entrer dans l'image
+.env*
+*.pem
+*.key
+
+# Docker lui-même et documentation
+Dockerfile
+.dockerignore
+docs
+README.md
