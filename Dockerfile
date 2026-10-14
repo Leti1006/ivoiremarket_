@@ -66,8 +66,12 @@ ENV PORT=3000
 # Écoute sur toutes les interfaces, sinon le serveur serait injoignable depuis l'hôte.
 ENV HOSTNAME=0.0.0.0
 
-# Crée un groupe et un utilisateur système non privilégiés (principe du moindre privilège).
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+# Crée un groupe et un utilisateur système non privilégiés (principe du moindre privilège),
+# puis le dossier de la base de données SQLite, qui doit lui appartenir pour qu'il puisse y écrire.
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs   && mkdir -p /app/data && chown nextjs:nodejs /app/data
+
+# Emplacement de la base SQLite (catalogue, commandes) dans le conteneur.
+ENV DATABASE_PATH=/app/data/ivoiremarket.db
 
 # Copie les fichiers statiques publics (favicon, etc.).
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
@@ -81,8 +85,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # À partir d'ici, tout s'exécute avec l'utilisateur non privilégié, pas en root.
 USER nextjs
 
+# Déclare /app/data comme volume : la base survit à la suppression du conteneur
+# et à une mise à jour de l'image (docker run -v ivoiremarket-data:/app/data).
+VOLUME ["/app/data"]
+
 # Documente le port utilisé par le conteneur (la publication se fait avec « docker run -p »).
 EXPOSE 3000
+
+# Rappel : ADMIN_PASSWORD et SESSION_SECRET ne sont PAS dans l'image ; ils sont
+# fournis au démarrage (docker run --env-file), comme tout secret.
 
 # Vérifie toutes les 30 s que l'application répond ; Docker affiche alors « healthy ».
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
