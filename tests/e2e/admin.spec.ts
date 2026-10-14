@@ -107,7 +107,7 @@ test.describe("espace administrateur", () => {
     await login(page);
     await page.getByRole("link", { name: "Commandes", exact: true }).click();
     await page.getByRole("link", { name: orderNumber }).click();
-    await expect(page.getByText(customer)).toBeVisible();
+    await expect(page.getByText(customer).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByText("4 500 FCFA").first()).toBeVisible(); // 2 500 + 2 000 de livraison
 
     await page.getByRole("button", { name: "Marquer « Confirmée »" }).click();
