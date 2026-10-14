@@ -6,7 +6,7 @@ L'application est développée avec Next.js et TypeScript, conteneurisée avec D
 
 🌐 **Application en ligne : http://13.60.255.43** (instance AWS EC2, région eu-north-1).
 
-> ⚠️ **Démonstration uniquement** : les produits, prix, stocks et promotions sont fictifs. Aucune vente, aucun paiement et aucune livraison ne sont effectués, et aucune donnée saisie n'est conservée.
+> ⚠️ **Démonstration uniquement** : les marques et modèles existent (photos réelles sous licence libre), mais les prix, stocks et promotions sont fictifs. Aucune vente, aucun paiement et aucune livraison ne sont effectués. Les commandes sont enregistrées dans la base uniquement pour être traitées dans l'espace administrateur : il ne faut pas y saisir de vraies coordonnées.
 
 ---
 
@@ -30,7 +30,7 @@ L'application est développée avec Next.js et TypeScript, conteneurisée avec D
 16. [Difficultés rencontrées et solutions](#16-difficultés-rencontrées-et-solutions)
 17. [Procédure de démonstration](#17-procédure-de-démonstration)
 
-Voir aussi : [docs/COMMANDES.md](docs/COMMANDES.md) (aide-mémoire des commandes) et [docs/SOUTENANCE.md](docs/SOUTENANCE.md) (préparation de la soutenance).
+Voir aussi : [docs/COMMANDES.md](docs/COMMANDES.md) (aide-mémoire des commandes).
 
 ---
 
@@ -52,8 +52,24 @@ Voir aussi : [docs/COMMANDES.md](docs/COMMANDES.md) (aide-mémoire des commandes
 | Fiche produit | `/produits/[slug]` | Visuel, prix en FCFA, stock, description, points clés, quantité, ajout au panier, produits similaires |
 | Panier | `/panier` | Modification des quantités, suppression, sous-totaux, total, panier conservé après actualisation |
 | Commande | `/commande` | Formulaire validé (nom, téléphone ivoirien, zone, adresse), frais de livraison, récapitulatif |
-| Confirmation | `/commande/confirmation` | Numéro de commande de démo, récapitulatif, montant total |
+| Confirmation | `/commande/confirmation` | Numéro de commande, récapitulatif, montant total |
+| Crédits photos | `/credits` | Auteur, licence et source de chaque photo |
 | 404 | toute URL inconnue | Page cohérente avec l'identité visuelle, vrai code HTTP 404 |
+
+**Espace administrateur** (accès protégé par mot de passe) :
+
+| Page | Route | Contenu |
+|---|---|---|
+| Connexion | `/admin/connexion` | Identifiant + mot de passe, limitation à 5 essais / 15 min |
+| Tableau de bord | `/admin` | Nombre de produits, commandes à traiter, ruptures, chiffre d'affaires (démo), alertes de stock |
+| Produits | `/admin/produits` | Liste, recherche, filtre de stock ; création, modification (prix, promo, stock, photo, mise en avant) et suppression |
+| Commandes | `/admin/commandes` | Liste filtrable par statut, détail client et articles, changement de statut |
+
+**Logique d'ensemble** : la boutique et l'administration partagent la même base de données.
+
+- Une commande passée en boutique **décrémente le stock** (transaction atomique : impossible de vendre deux fois le dernier exemplaire) et apparaît immédiatement dans l'administration.
+- Le cycle d'une commande est contrôlé : `Nouvelle → Confirmée → Expédiée → Livrée`, avec annulation possible avant expédition. **Une annulation remet les articles en stock.**
+- Un prix, une promotion, un stock ou une photo modifiés par l'administrateur sont **visibles immédiatement** dans la boutique ; un produit à stock 0 passe en « Rupture » et ne peut plus être commandé.
 
 Détails techniques notables :
 
@@ -69,7 +85,9 @@ Détails techniques notables :
 | Framework | **Next.js 16.4** (App Router, Cache Components) | Pages, rendu serveur, Server Actions |
 | Langage | **TypeScript 5** en mode `strict` | Typage de tout le code applicatif |
 | UI | **React 19**, **Tailwind CSS 4**, **Lucide React** | Composants, styles, icônes |
-| Validation | **Zod 4** | Paramètres d'URL, formulaire, panier stocké, Server Action |
+| Validation | **Zod 4** | Paramètres d'URL, formulaires, panier stocké, Server Actions |
+| Base de données | **SQLite** via `node:sqlite` (intégré à Node 24) | Catalogue, commandes, stocks |
+| Images | **next/image** (AVIF/WebP, tailles adaptées) | Photos réelles optimisées |
 | Tests | **Vitest**, **React Testing Library**, **Playwright** | Tests unitaires, de composants et de parcours |
 | Qualité | **ESLint** (config Next.js) | Analyse statique |
 | Conteneur | **Docker** (build multi-étapes, `node:24-alpine`) | Image de production |
@@ -78,10 +96,11 @@ Détails techniques notables :
 
 Choix assumés :
 
-- **pas de base de données** : le catalogue est un fichier TypeScript typé. Une base n'apporterait rien à une démo sans vraies commandes ;
+- **SQLite plutôt qu'un serveur de base de données** : un simple fichier, sans service supplémentaire à administrer ni dépendance native à compiler (`node:sqlite` est intégré à Node 24). Dans Docker, il est placé dans un **volume** pour survivre aux mises à jour. Pour plusieurs serveurs, on passerait à PostgreSQL (Amazon RDS) ;
 - **pas de shadcn/ui** : une poignée de composants maison (bouton, badge, champ) suffisent et évitent des dépendances ;
 - **pas de Nginx** : le serveur Node.js de Next.js sert directement le site sur le port 3000, publié sur le port 80 par Docker. Nginx ne deviendrait utile qu'avec HTTPS et un nom de domaine ;
-- **illustrations SVG** dessinées dans le code plutôt que des photos de marques soumises au droit d'auteur.
+- **photos réelles issues de Wikimedia Commons** (licences CC0, CC BY, CC BY-SA) plutôt que des photos de sites marchands protégées par le droit d'auteur. Chaque photo est créditée (fiche produit et page `/credits`). Le nom de chaque produit correspond au modèle visible sur sa photo ;
+- **un seul compte administrateur** défini par variables d'environnement : suffisant pour la démonstration, sans table d'utilisateurs ni inscription.
 
 ## 4. Architecture
 
@@ -92,16 +111,22 @@ ivoiremarket/
 ├── deploy/ec2-deploy.sh     # Script de déploiement sur EC2 (pull + run)
 ├── next.config.ts           # standalone, en-têtes de sécurité, Cache Components
 ├── src/
-│   ├── app/                 # Routes (pages, layout, 404, erreur)
+├── public/images/products/  # 29 photos WebP optimisées
+├── src/
+│   ├── app/
+│   │   ├── (boutique)/      # Pages publiques (accueil, catalogue, produit, panier, commande, crédits)
+│   │   └── admin/           # Connexion + espace administrateur protégé
 │   ├── components/          # Composants partagés (en-tête, pied de page, logo, bouton)
-│   ├── data/                # Données de démonstration (produits, catégories, zones)
+│   ├── data/                # Catalogue initial (seed), catégories, zones, crédits photos
 │   ├── features/
-│   │   ├── products/        # Recherche, filtres, tri, cartes, visuels
+│   │   ├── products/        # Recherche, filtres, tri, cartes, photos
 │   │   ├── cart/            # Logique du panier, stockage local, composants
-│   │   └── checkout/        # Validation, calcul de commande, Server Action
+│   │   ├── checkout/        # Validation, calcul et enregistrement de commande
+│   │   └── admin/           # Formulaires, Server Actions et statuts de l'administration
+│   ├── server/              # Code serveur uniquement : base SQLite, dépôts, authentification
 │   ├── lib/                 # Utilitaires (formatage FCFA…)
 │   ├── types/               # Types TypeScript
-│   └── proxy.ts             # Vrai 404 pour les produits inconnus
+│   └── proxy.ts             # 404 réel pour les produits inconnus + garde de /admin
 └── tests/
     ├── unit/                # Vitest + Testing Library
     └── e2e/                 # Playwright (desktop + mobile)
@@ -113,7 +138,9 @@ Principes :
 - La **logique métier est isolée dans des fonctions pures** (`filters.ts`, `cart-logic.ts`, `order.ts`), testées indépendamment de l'interface.
 - Le **panier** est stocké dans le `localStorage` du navigateur et validé par Zod à la lecture. Il n'est envoyé au serveur qu'au moment de commander.
 - La **commande** passe par une **Server Action** (`placeDemoOrder`) qui revalide le formulaire et recalcule les prix côté serveur.
-- Les **fiches produits** sont générées au build (`generateStaticParams`), et la page catalogue est en *Partial Prerendering* : la coquille est statique, les résultats sont rendus en streaming.
+- Les pages sont en *Partial Prerendering* : la coquille (en-tête, titres) est statique, les données de la base arrivent en streaming. Les lectures appellent `connection()` pour toujours refléter l'état actuel de la base.
+- La **base** est initialisée automatiquement au premier démarrage avec le catalogue de départ (`src/data/seed-products.ts`). Ensuite, c'est l'administration qui fait foi.
+- **Sécurité de l'administration en profondeur** : le Proxy redirige les visiteurs sans session, et **chaque page et chaque Server Action** revérifie la session (`requireAdmin`) avant de lire ou modifier une donnée.
 
 ## 5. Prérequis
 
@@ -132,7 +159,8 @@ Principes :
 git clone https://github.com/Leti1006/ivoiremarket_.git
 cd ivoiremarket_
 npm ci            # installe les versions exactes du package-lock.json
-npm run dev       # http://localhost:3000
+cp .env.example .env.local   # puis choisir un mot de passe admin et un secret de session
+npm run dev       # http://localhost:3000  — administration : http://localhost:3000/admin
 ```
 
 ## 7. Tests et qualité
@@ -171,14 +199,19 @@ Le [Dockerfile](Dockerfile) est commenté instruction par instruction. Il compor
 
 1. **deps** : `npm ci` à partir du `package-lock.json`, mis en cache tant qu'il ne change pas ;
 2. **builder** : `npm run build` produit le serveur autonome `.next/standalone` ;
-3. **runner** : image finale `node:24-alpine` qui ne contient que `server.js`, les modules nécessaires et les fichiers statiques. Elle s'exécute avec l'utilisateur **non privilégié** `nextjs` et dispose d'un `HEALTHCHECK`.
+3. **runner** : image finale `node:24-alpine` qui ne contient que `server.js`, les modules nécessaires, les fichiers statiques et les photos. Elle s'exécute avec l'utilisateur **non privilégié** `nextjs`, déclare le volume `/app/data` (base SQLite) et dispose d'un `HEALTHCHECK`.
+
+Les **secrets ne sont jamais dans l'image** : le mot de passe administrateur et la clé de session sont fournis au démarrage, dans un fichier d'environnement local non versionné.
 
 ```bash
 # Construire l'image (localement)
-docker build -t leti1006/ivoiremarket:v1 .
+docker build -t leti1006/ivoiremarket:v2 .
 
-# Lancer un conteneur : port 8080 de la machine -> port 3000 du conteneur
-docker run -d --name ivoiremarket -p 8080:3000 leti1006/ivoiremarket:v1
+# Fichier de secrets (non versionné), sur le modèle de .env.example
+cp .env.example ivoiremarket.env   # puis éditer les valeurs
+
+# Lancer un conteneur : port 8080 -> 3000, base dans le volume « ivoiremarket-data »
+docker run -d --name ivoiremarket -p 8080:3000   --env-file ivoiremarket.env   -v ivoiremarket-data:/app/data   leti1006/ivoiremarket:v2
 
 # Vérifier
 curl -I http://localhost:8080
@@ -189,7 +222,8 @@ docker logs ivoiremarket
 docker stop ivoiremarket && docker rm ivoiremarket
 
 # Après une modification du code : reconstruire puis relancer
-docker build -t leti1006/ivoiremarket:v1 .
+# (le volume conserve les produits et commandes saisis dans l'administration)
+docker build -t leti1006/ivoiremarket:v2 .
 ```
 
 Taille mesurée : environ **75 Mo** compressés sur Docker Hub.
@@ -290,22 +324,31 @@ Aucun autre port n'est ouvert dans le groupe de sécurité.
 - **Pas d'injection HTML** : React échappe tout le texte affiché ; aucun `dangerouslySetInnerHTML`.
 - **En-têtes HTTP** : `Content-Security-Policy` (ressources du site uniquement, `frame-ancestors 'none'`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` ; l'en-tête `X-Powered-By` est supprimé.
   - Limite connue : la CSP autorise `'unsafe-inline'` pour les scripts, car Next.js injecte des scripts d'hydratation. Une CSP à *nonce* demanderait un rendu entièrement dynamique.
-- **Données minimales** : ni carte bancaire, ni mot de passe, ni stockage côté serveur ; e-mail facultatif.
+- **Administration** :
+  - identifiants et clé de session fournis par variables d'environnement, jamais dans le code, Git ou l'image ;
+  - session = jeton signé HMAC-SHA256 avec expiration (8 h), dans un cookie `httpOnly` + `SameSite=Strict` (inaccessible au JavaScript, non envoyé depuis un autre site) ;
+  - comparaisons à temps constant ; blocage après 5 échecs en 15 minutes ;
+  - double contrôle : le Proxy filtre `/admin`, et chaque page et Server Action revérifie la session ; les Server Actions de Next.js vérifient aussi l'origine des requêtes (protection CSRF) ;
+  - pages d'administration exclues de l'indexation (`noindex`).
+- **Base de données** : requêtes **paramétrées** uniquement (`?`), donc pas d'injection SQL ; contraintes `CHECK` (prix > 0, stock ≥ 0) ; transactions pour les commandes et les annulations.
+- **Photos** : seules les photos de la photothèque peuvent être choisies (liste blanche) ; l'optimiseur d'images n'accepte que `/images/products/**`.
+- **Données minimales** : ni carte bancaire, ni mot de passe client ; e-mail facultatif. Les commandes (nom, téléphone, adresse) sont stockées pour la démonstration : un avertissement invite à ne pas saisir de vraies coordonnées.
 - **Aucun secret dans le dépôt ni dans l'image** : `.gitignore` et `.dockerignore` excluent `.env*`, `*.pem` et `*.key`.
 - **Conteneur non-root**, image minimale sans outils de compilation.
 - **AWS** : SSH limité à une IP, port 3000 non exposé, aucune clé AWS dans le code.
 - **Dépendances** : `npm audit` signale des vulnérabilités dans `braces`, une dépendance de l'outillage ESLint utilisée seulement en développement et absente de l'image finale. Le correctif proposé (`--force`) rétrograderait `eslint-config-next` en version 14 ; il n'a donc pas été appliqué.
-- **HTTPS** : non mis en place, car il faut un nom de domaine pour obtenir un certificat (Let's Encrypt). Le site est servi en HTTP, ce qui est acceptable puisqu'aucune donnée sensible n'est collectée.
+- **HTTPS** : non mis en place, car il faut un nom de domaine pour obtenir un certificat (Let's Encrypt). **Limite importante** : en HTTP, le mot de passe administrateur et le cookie de session circulent en clair sur le réseau. Pour une vraie mise en production, HTTPS serait obligatoire, et il faudrait définir `COOKIE_SECURE=true`.
 
 ## 14. Limites actuelles
 
-- Catalogue statique dans le code : pas d'interface d'administration ni de base de données.
-- Commandes simulées : rien n'est enregistré, la confirmation n'est visible que dans l'onglet d'origine.
-- Pas de comptes utilisateurs ni de paiement réel (volontairement).
+- Un seul compte administrateur, sans gestion de rôles ; la limitation des tentatives de connexion est en mémoire (remise à zéro au redémarrage).
+- SQLite sur un seul serveur : pas de réplication. Une sauvegarde consiste à copier le volume `ivoiremarket-data`.
+- Pas d'envoi de photos depuis l'administration : on choisit parmi la photothèque (choix volontaire pour éviter les risques liés aux fichiers envoyés).
+- Pas de comptes clients ni de paiement réel (volontairement) ; la confirmation n'est visible que dans l'onglet d'origine.
 - HTTP uniquement (pas de nom de domaine).
 - Image construite pour `amd64` uniquement.
 
-Améliorations possibles : base de données (PostgreSQL/RDS), administration du catalogue, vraies photos, paiement Mobile Money en mode test, HTTPS via un nom de domaine et Nginx ou un Load Balancer, publication automatique de l'image depuis la CI (aujourd'hui la CI vérifie mais ne publie pas).
+Améliorations possibles : HTTPS (nom de domaine + Nginx/Caddy ou un Load Balancer AWS), PostgreSQL sur Amazon RDS, envoi de photos vers Amazon S3, comptes administrateurs multiples avec rôles, notifications de commande par e-mail/SMS, paiement Mobile Money en mode test, publication automatique de l'image depuis la CI.
 
 ## 15. Répartition du travail
 
@@ -331,8 +374,15 @@ Un assistant IA (Claude Code) a été utilisé pour générer et vérifier une p
 | Le panneau de navigateur, trop petit, rendait la console EC2 difficile à manipuler | Formulaires de la console dans une iframe peu lisible | Création des ressources en ligne de commande via AWS CloudShell (AWS CLI), plus reproductible |
 | Ne pas faire transiter de clé privée | Le téléchargement d'un `.pem` expose la clé | Clé générée en local (`ssh-keygen`), seule la clé publique est importée |
 | Choix de l'instance | L'image Docker est construite pour `amd64` | Instance x86_64 (t3.micro), pas de t4g (ARM) |
+| Tableau de bord admin bloqué sur « chargement » | Next 16 interdit `Date.now()` pendant un pré-rendu ; la vérification d'expiration de session l'utilisait | `await connection()` avant la vérification : elle a lieu à chaque requête |
+| Tests E2E très lents, navigations expirées | L'encodage des images en AVIF saturait le CPU du serveur | Format WebP uniquement (les photos source sont déjà en WebP) |
+| Déplacement de dossiers refusé (`Permission denied`) | Le serveur de développement verrouillait les fichiers (Windows) | Arrêt du serveur avant de réorganiser les routes |
 | _à compléter par le groupe_ | | |
 
 ## 17. Procédure de démonstration
 
-Voir le scénario détaillé dans [docs/SOUTENANCE.md](docs/SOUTENANCE.md#scénario-de-démonstration-58-minutes).
+1. Ouvrir le site public, parcourir le catalogue, rechercher et filtrer.
+2. Ajouter des produits au panier, actualiser la page (panier conservé), passer une commande.
+3. Se connecter à `/admin` : la commande apparaît et le stock a diminué ; faire avancer son statut.
+4. Modifier le prix d'un produit dans l'administration et constater le changement dans la boutique.
+5. Montrer le Dockerfile, l'image sur Docker Hub, puis `docker ps` et `docker logs` sur EC2.

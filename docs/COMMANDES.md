@@ -30,7 +30,9 @@ Convention des messages : `feat:` (fonctionnalité), `fix:` (correction), `test:
 docker version                                            # Docker fonctionne ?
 docker build -t leti1006/ivoiremarket:v1 .                # construire l'image
 docker images leti1006/ivoiremarket                       # lister l'image
-docker run -d --name ivoiremarket -p 8080:3000 leti1006/ivoiremarket:v1
+docker run -d --name ivoiremarket -p 8080:3000 --env-file ivoiremarket.env -v ivoiremarket-data:/app/data leti1006/ivoiremarket:v2
+docker volume ls                                          # le volume de la base
+docker exec ivoiremarket ls -l /app/data                  # fichier SQLite
 docker ps                                                 # conteneurs actifs (healthy ?)
 docker logs -f ivoiremarket                               # logs en direct
 curl -I http://localhost:8080                             # test HTTP
@@ -58,10 +60,13 @@ sudo apt-get update && sudo apt-get install -y docker.io
 sudo systemctl enable --now docker
 sudo usermod -aG docker ubuntu && exit       # se reconnecter ensuite
 
-# Déploiement (aucun build : uniquement pull + run)
-docker pull leti1006/ivoiremarket:v1
+# Déploiement (aucun build : uniquement pull + run) — le script fait tout :
+./ec2-deploy.sh leti1006 v2
+# Équivalent manuel :
+docker pull leti1006/ivoiremarket:v2
 docker rm -f ivoiremarket 2>/dev/null || true
-docker run -d --name ivoiremarket --restart unless-stopped -p 80:3000 leti1006/ivoiremarket:v1
+docker run -d --name ivoiremarket --restart unless-stopped -p 80:3000   --env-file ~/ivoiremarket.env -v ivoiremarket-data:/app/data leti1006/ivoiremarket:v2
+cat ~/ivoiremarket.env                     # identifiants admin (ne jamais les publier)
 
 # Vérifications
 docker ps
