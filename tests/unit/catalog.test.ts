@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { products } from "@/data/products";
+import { seedProducts as products } from "@/data/seed-products";
 import { catalogHref } from "@/features/products/catalog-url";
 import { filterProducts, normalizeText, parseCatalogSearch } from "@/features/products/filters";
 import { CATEGORY_IDS } from "@/types/product";
@@ -60,6 +60,7 @@ describe("filterProducts", () => {
   it("exige que tous les mots recherchés soient présents", () => {
     const results = all({ q: "samsung buds" });
     expect(results.map((p) => p.slug)).toEqual(["samsung-galaxy-buds-fe"]);
+    expect(all({ q: "reconditionne" }).length).toBeGreaterThanOrEqual(2);
   });
 
   it("retourne une liste vide pour une recherche sans résultat", () => {

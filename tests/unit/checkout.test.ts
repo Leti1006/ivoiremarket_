@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { deliveryFee, FREE_DELIVERY_THRESHOLD } from "@/data/delivery-zones";
 import { placeDemoOrder } from "@/features/checkout/actions";
 import { checkoutFormSchema, normalizeIvorianPhone } from "@/features/checkout/checkout-schema";
 import { computeOrder, generateOrderNumber } from "@/features/checkout/order";
-import { getProductById } from "@/features/products/queries";
+import { listOrders } from "@/server/orders-repo";
+import { findProductById } from "@/server/products-repo";
+import { resetTestDatabase } from "../helpers/test-db";
 
 const validForm = {
   fullName: "Aya Konan",
@@ -13,6 +15,11 @@ const validForm = {
   address: "Riviera 2, près de la pharmacie",
   note: "",
 };
+
+// p-016 : chargeur USB-C 30 W, 9 500 FCFA, stock initial 50.
+const CHARGER = "p-016";
+
+beforeEach(() => resetTestDatabase());
 
 describe("normalizeIvorianPhone", () => {
   it("accepte les formats courants", () => {
@@ -57,8 +64,8 @@ describe("checkoutFormSchema", () => {
 
 describe("calcul de la commande", () => {
   it("recalcule les prix depuis le catalogue et ajoute la livraison", () => {
-    const r = computeOrder([{ productId: "p-011", quantity: 2 }], "abidjan-cocody", getProductById);
-    expect(r).toMatchObject({ ok: true, subtotal: 69_000, deliveryFee: 2_000, total: 71_000 });
+    const r = computeOrder([{ productId: CHARGER, quantity: 2 }], "abidjan-cocody", findProductById);
+    expect(r).toMatchObject({ ok: true, subtotal: 19_000, deliveryFee: 2_000, total: 21_000 });
   });
 
   it("offre la livraison au-delà du seuil", () => {
@@ -67,9 +74,9 @@ describe("calcul de la commande", () => {
   });
 
   it("refuse un produit inconnu ou un stock insuffisant", () => {
-    expect(computeOrder([{ productId: "x", quantity: 1 }], "interieur", getProductById).ok).toBe(false);
-    expect(computeOrder([{ productId: "p-004", quantity: 9 }], "interieur", getProductById).ok).toBe(false);
-    expect(computeOrder([{ productId: "p-005", quantity: 1 }], "interieur", getProductById).ok).toBe(false);
+    expect(computeOrder([{ productId: "x", quantity: 1 }], "interieur", findProductById).ok).toBe(false);
+    expect(computeOrder([{ productId: "p-004", quantity: 9 }], "interieur", findProductById).ok).toBe(false);
+    expect(computeOrder([{ productId: "p-005", quantity: 1 }], "interieur", findProductById).ok).toBe(false);
   });
 
   it("génère un numéro de commande lisible", () => {
@@ -78,18 +85,29 @@ describe("calcul de la commande", () => {
 });
 
 describe("placeDemoOrder (Server Action)", () => {
-  it("ignore tout prix envoyé par le client", async () => {
-    const r = await placeDemoOrder(validForm, [{ productId: "p-011", quantity: 1, price: 1 }]);
+  it("enregistre la commande, décrémente le stock et ignore les prix envoyés", async () => {
+    const r = await placeDemoOrder(validForm, [{ productId: CHARGER, quantity: 3, price: 1 }]);
     expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.order.total).toBe(34_500 + 2_000);
-      expect(r.order.orderNumber).toMatch(/^IM-\d{8}-[0-9A-F]{6}$/);
-      expect(r.order.customer.zoneLabel).toBe("Abidjan – Cocody");
-    }
+    if (!r.ok) return;
+    expect(r.order.total).toBe(3 * 9_500 + 2_000);
+    expect(r.order.orderNumber).toMatch(/^IM-\d{8}-[0-9A-F]{6}$/);
+
+    expect(findProductById(CHARGER)?.stock).toBe(47);
+    const [stored] = listOrders();
+    expect(stored).toMatchObject({ orderNumber: r.order.orderNumber, status: "nouvelle", total: 30_500 });
+    expect(stored.customer.phone).toBe("+225 07 08 09 10 11");
+  });
+
+  it("refuse une commande dépassant le stock sans rien modifier", async () => {
+    // iPhone 15 : 4 en stock.
+    const r = await placeDemoOrder(validForm, [{ productId: "p-004", quantity: 5 }]);
+    expect(r.ok).toBe(false);
+    expect(findProductById("p-004")?.stock).toBe(4);
+    expect(listOrders()).toHaveLength(0);
   });
 
   it("renvoie les erreurs de champ et refuse un panier vide", async () => {
-    const bad = await placeDemoOrder({ ...validForm, phone: "1" }, [{ productId: "p-011", quantity: 1 }]);
+    const bad = await placeDemoOrder({ ...validForm, phone: "1" }, [{ productId: CHARGER, quantity: 1 }]);
     expect(bad).toMatchObject({ ok: false, fieldErrors: { phone: expect.any(String) } });
 
     const empty = await placeDemoOrder(validForm, []);

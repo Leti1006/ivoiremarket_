@@ -11,6 +11,7 @@ import { useCart } from "@/features/cart/use-cart";
 import { formatPrice } from "@/lib/format";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/cn";
+import type { ProductSummary } from "@/types/product";
 import { placeDemoOrder } from "../actions";
 import { checkoutFormSchema, type CheckoutField } from "../checkout-schema";
 import { saveLastOrder } from "../order-storage";
@@ -60,10 +61,10 @@ function Field({
   );
 }
 
-export function CheckoutForm() {
+export function CheckoutForm({ catalog }: { catalog: ProductSummary[] }) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const { lines, items, count, subtotal, clear } = useCart();
+  const { lines, count, subtotal, clear } = useCart(catalog);
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -110,7 +111,10 @@ export function CheckoutForm() {
     // 2) Validation définitive et calcul du total par le serveur.
     startTransition(async () => {
       try {
-        const result = await placeDemoOrder(values, items);
+        const result = await placeDemoOrder(
+          values,
+          lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+        );
         if (!result.ok) {
           if (result.fieldErrors) {
             setErrors(result.fieldErrors);
@@ -252,8 +256,9 @@ export function CheckoutForm() {
         <div className="rounded-xl border border-accent-100 bg-accent-50 p-4 text-sm text-accent-700">
           <p className="font-semibold">Paiement à la livraison (démonstration)</p>
           <p className="mt-1">
-            Aucune information bancaire n&apos;est demandée. Cette commande est simulée : rien ne sera
-            livré ni facturé, et vos informations ne sont pas enregistrées.
+            Aucune information bancaire n&apos;est demandée. Votre commande est enregistrée pour être
+            suivie dans l&apos;espace administrateur, mais rien ne sera réellement livré ni facturé :
+            n&apos;utilisez pas vos vraies coordonnées.
           </p>
         </div>
       </div>

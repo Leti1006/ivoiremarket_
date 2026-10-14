@@ -48,7 +48,7 @@ export function ConfirmationView() {
         <CheckCircle2 className="mx-auto h-14 w-14 text-brand-600" aria-hidden="true" />
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink">Merci, commande validée !</h1>
         <p className="mt-2 text-muted">
-          {order.customer.fullName}, votre commande de démonstration a bien été validée.
+          {order.customer.fullName}, votre commande a bien été enregistrée et sera traitée par notre équipe.
         </p>
         <p className="mt-5 inline-flex flex-col rounded-2xl bg-card px-6 py-3 shadow-card">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted">Numéro de commande</span>
@@ -57,7 +57,7 @@ export function ConfirmationView() {
           </span>
         </p>
         <p className="mt-4 text-xs text-muted">
-          Démonstration : aucune commande réelle n&apos;a été transmise et aucun paiement ne sera demandé.
+          Projet de démonstration : aucune livraison réelle et aucun paiement ne seront effectués.
         </p>
       </div>
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { getProductById } from "@/features/products/queries";
-import type { Product } from "@/types/product";
+import type { ProductSummary } from "@/types/product";
 import {
   addItem,
   buildCartLines,
@@ -10,19 +9,32 @@ import {
   cartSubtotal,
   removeItem,
   setQuantity,
+  type CartItem,
 } from "./cart-logic";
 import { getCartSnapshot, getServerCartSnapshot, subscribeCart, writeCart } from "./cart-store";
 
-export function useCart() {
-  const items = useSyncExternalStore(subscribeCart, getCartSnapshot, getServerCartSnapshot);
+type StockInfo = Pick<ProductSummary, "id" | "stock">;
 
-  const lines = useMemo(() => buildCartLines(items, getProductById), [items]);
+const NO_CATALOG: ProductSummary[] = [];
 
-  const add = useCallback((product: Product, quantity = 1) => {
+/**
+ * Panier du navigateur.
+ * @param catalog produits actuels fournis par le serveur (prix et stock à jour),
+ *   nécessaires pour afficher les lignes et calculer les totaux.
+ */
+export function useCart(catalog: ProductSummary[] = NO_CATALOG) {
+  const items: CartItem[] = useSyncExternalStore(subscribeCart, getCartSnapshot, getServerCartSnapshot);
+
+  const lines = useMemo(() => {
+    const byId = new Map(catalog.map((p) => [p.id, p]));
+    return buildCartLines(items, (id) => byId.get(id));
+  }, [items, catalog]);
+
+  const add = useCallback((product: StockInfo, quantity = 1) => {
     writeCart(addItem(getCartSnapshot(), product, quantity));
   }, []);
 
-  const update = useCallback((product: Product, quantity: number) => {
+  const update = useCallback((product: StockInfo, quantity: number) => {
     writeCart(setQuantity(getCartSnapshot(), product, quantity));
   }, []);
 
@@ -35,7 +47,10 @@ export function useCart() {
   return {
     items,
     lines,
+    /** Nombre d'articles valides (produits connus et disponibles). */
     count: cartItemCount(lines),
+    /** Nombre total d'articles stockés, sans consulter le catalogue (en-tête). */
+    storedCount: cartItemCount(items),
     subtotal: cartSubtotal(lines),
     add,
     update,

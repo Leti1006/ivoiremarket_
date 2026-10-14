@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, ShoppingCart } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
-import type { Product } from "@/types/product";
+import type { ProductSummary } from "@/types/product";
 import { maxQuantityFor } from "../cart-logic";
 import { useCart } from "../use-cart";
 import { QuantityStepper } from "./quantity-stepper";
 
-export function AddToCart({ product }: { product: Product }) {
+export function AddToCart({ product }: { product: ProductSummary }) {
   const { items, add } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);

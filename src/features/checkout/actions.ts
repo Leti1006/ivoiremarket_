@@ -1,6 +1,7 @@
 "use server";
 
-import { getProductById } from "@/features/products/queries";
+import { insertOrder, OutOfStockError } from "@/server/orders-repo";
+import { findProductById } from "@/server/products-repo";
 import { checkoutFormSchema, orderItemsSchema, type CheckoutField } from "./checkout-schema";
 import { computeOrder, generateOrderNumber, zoneLabel, type DemoOrder } from "./order";
 
@@ -9,8 +10,9 @@ export type PlaceOrderResult =
   | { ok: false; formError?: string; fieldErrors?: Partial<Record<CheckoutField, string>> };
 
 /**
- * Server Action : valide la commande de DÉMONSTRATION côté serveur.
- * Aucune donnée n'est enregistrée, aucun paiement n'est effectué.
+ * Server Action : valide et enregistre une commande de DÉMONSTRATION.
+ * Aucun paiement n'est effectué. La commande apparaît dans l'espace
+ * administrateur et le stock est décrémenté.
  * La validation est refaite ici même si le navigateur l'a déjà faite,
  * car une requête peut être envoyée sans passer par l'interface.
  */
@@ -30,22 +32,30 @@ export async function placeDemoOrder(form: unknown, items: unknown): Promise<Pla
     return { ok: false, formError: parsedItems.error.issues[0]?.message ?? "Panier invalide." };
   }
 
-  const computed = computeOrder(parsedItems.data, parsedForm.data.zone, getProductById);
+  // Prix et stock lus dans la base : les valeurs envoyées par le navigateur sont ignorées.
+  const computed = computeOrder(parsedItems.data, parsedForm.data.zone, findProductById);
   if (!computed.ok) return { ok: false, formError: computed.error };
 
   const { zone, ...customer } = parsedForm.data;
   const now = new Date();
 
-  return {
-    ok: true,
-    order: {
+  try {
+    const stored = insertOrder({
       orderNumber: generateOrderNumber(now, crypto.randomUUID().replace(/-/g, "")),
       createdAt: now.toISOString(),
+      zoneId: zone,
       customer: { ...customer, zoneLabel: zoneLabel(zone) },
       lines: computed.lines,
       subtotal: computed.subtotal,
       deliveryFee: computed.deliveryFee,
       total: computed.total,
-    },
-  };
+    });
+    const { orderNumber, createdAt, customer: c, lines, subtotal, deliveryFee, total } = stored;
+    return { ok: true, order: { orderNumber, createdAt, customer: c, lines, subtotal, deliveryFee, total } };
+  } catch (error) {
+    if (error instanceof OutOfStockError) {
+      return { ok: false, formError: `${error.message} Mettez à jour votre panier.` };
+    }
+    throw error;
+  }
 }

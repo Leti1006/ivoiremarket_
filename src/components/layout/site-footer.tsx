@@ -37,6 +37,8 @@ export function SiteFooter() {
             <li><Link href="/catalogue?tri=prix-asc" className="hover:text-accent-500">Petits prix</Link></li>
             <li><Link href="/panier" className="hover:text-accent-500">Mon panier</Link></li>
             <li><Link href="/commande" className="hover:text-accent-500">Passer commande</Link></li>
+            <li><Link href="/credits" className="hover:text-accent-500">Crédits photos</Link></li>
+            <li><Link href="/admin" className="hover:text-accent-500">Espace administrateur</Link></li>
           </ul>
         </div>
 
@@ -44,8 +46,8 @@ export function SiteFooter() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-white">À propos du projet</h2>
           <p className="mt-3 text-sm leading-relaxed text-brand-100/80">
             Application réalisée dans le cadre d&apos;un projet universitaire de cloud computing
-            (Next.js, Docker, AWS EC2). Les produits, prix et stocks sont fictifs ; aucune donnée
-            saisie n&apos;est conservée.
+            (Next.js, Docker, AWS EC2). Les prix et stocks sont fictifs ; les commandes sont
+            enregistrées uniquement pour la démonstration de l&apos;espace administrateur.
           </p>
         </div>
       </div>

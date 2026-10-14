@@ -1,4 +1,4 @@
-import type { Product } from "@/types/product";
+import type { Product, ProductSummary } from "@/types/product";
 
 export type CartItem = {
   productId: string;
@@ -6,7 +6,7 @@ export type CartItem = {
 };
 
 export type CartLine = {
-  product: Product;
+  product: ProductSummary;
   quantity: number;
   /** Prix unitaire × quantité, en FCFA. */
   lineTotal: number;
@@ -65,7 +65,7 @@ export function removeItem(items: CartItem[], productId: string): CartItem[] {
  */
 export function buildCartLines(
   items: CartItem[],
-  findProduct: (id: string) => Product | undefined,
+  findProduct: (id: string) => ProductSummary | undefined,
 ): CartLine[] {
   const lines: CartLine[] = [];
   for (const item of items) {

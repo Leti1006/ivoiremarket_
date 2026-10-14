@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { DemoBanner } from "@/components/layout/demo-banner";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
 import "./globals.css";
 
 // La police est téléchargée au moment du build puis servie par l'application
@@ -19,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s | IvoireMarket",
   },
   description:
-    "Boutique de démonstration : smartphones, ordinateurs, audio, accessoires et équipements réseau, avec des prix en FCFA.",
+    "Smartphones, ordinateurs, audio, accessoires et équipements réseau, avec des prix en FCFA et le paiement à la livraison.",
   applicationName: "IvoireMarket",
 };
 
@@ -27,6 +24,7 @@ export const viewport: Viewport = {
   themeColor: "#063726",
 };
 
+/** Layout racine, commun à la boutique et à l'administration. */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${jakarta.variable} h-full antialiased`}>
@@ -37,12 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Aller au contenu
         </a>
-        <DemoBanner />
-        <SiteHeader />
-        <main id="contenu" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );
