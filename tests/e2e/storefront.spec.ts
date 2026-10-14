@@ -37,7 +37,7 @@ test.describe("navigation et catalogue", () => {
     await expect(page).toHaveURL(/tri=prix-asc/);
 
     const cards = tid(page, "product-card");
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(6);
     const prices = (await cards.locator("span.font-extrabold").allInnerTexts()).map(fcfa);
     expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
@@ -70,14 +70,14 @@ test.describe("navigation et catalogue", () => {
 
 test.describe("panier et commande", () => {
   test("parcours complet : ajout, panier conservé, commande, confirmation", async ({ page }) => {
-    // 1) Ajout de 2 casques JBL (34 500 FCFA l'unité).
-    await page.goto("/produits/jbl-tune-520bt");
+    // 1) Ajout de 2 casques JBL (39 000 FCFA l'unité).
+    await page.goto("/produits/casque-jbl-synchros-e50bt");
     await page.getByRole("button", { name: "Augmenter la quantité" }).click();
     await page.getByRole("button", { name: /Ajouter au panier/ }).click();
     await expect(tid(page, "cart-count")).toHaveText("2");
 
-    // 2) Ajout d'un routeur 4G (44 000 FCFA).
-    await page.goto("/produits/routeur-4g-huawei-b311");
+    // 2) Ajout d'un routeur 4G (49 000 FCFA).
+    await page.goto("/produits/routeur-4g-huawei-b528s");
     await page.getByRole("button", { name: /Ajouter au panier/ }).click();
     await expect(tid(page, "cart-count")).toHaveText("3");
 
@@ -85,14 +85,14 @@ test.describe("panier et commande", () => {
     await page.goto("/panier");
     await page.reload();
     await expect(tid(page, "cart-line")).toHaveCount(2);
-    await expect(tid(page, "subtotal")).toHaveText(/113\s000\sFCFA/);
+    await expect(tid(page, "subtotal")).toHaveText(/127\s000\sFCFA/);
 
     // 4) Modification et suppression.
     await page.getByRole("group", { name: /Quantité pour Casque JBL/ }).getByRole("button", { name: "Diminuer la quantité" }).click();
-    await expect(tid(page, "subtotal")).toHaveText(/78\s500\sFCFA/);
+    await expect(tid(page, "subtotal")).toHaveText(/88\s000\sFCFA/);
     await page.getByRole("button", { name: /Retirer Routeur 4G/ }).click();
     await expect(tid(page, "cart-line")).toHaveCount(1);
-    await expect(tid(page, "subtotal")).toHaveText(/34\s500\sFCFA/);
+    await expect(tid(page, "subtotal")).toHaveText(/39\s000\sFCFA/);
 
     // 5) Commande : d'abord un envoi invalide.
     await page.getByRole("link", { name: "Passer la commande" }).click();
@@ -106,7 +106,7 @@ test.describe("panier et commande", () => {
     await page.getByLabel("Téléphone").fill("07 08 09 10 11");
     await page.getByLabel("Zone de livraison").selectOption("abidjan-cocody");
     await expect(tid(page, "delivery-fee")).toHaveText(/2\s000\sFCFA/);
-    await expect(tid(page, "total")).toHaveText(/36\s500\sFCFA/);
+    await expect(tid(page, "total")).toHaveText(/41\s000\sFCFA/);
     await page.getByLabel("Adresse ou point de repère").fill("Riviera 2, près de la pharmacie");
     await page.getByRole("button", { name: /Valider la commande/ }).click();
 
@@ -114,7 +114,7 @@ test.describe("panier et commande", () => {
     await expect(page).toHaveURL(/\/commande\/confirmation$/);
     await expect(page.getByRole("heading", { name: /Merci, commande validée/ })).toBeVisible();
     await expect(tid(page, "order-number")).toHaveText(/^IM-\d{8}-[0-9A-F]{6}$/);
-    await expect(tid(page, "total")).toHaveText(/36\s500\sFCFA/);
+    await expect(tid(page, "total")).toHaveText(/41\s000\sFCFA/);
     await expect(page.getByText("+225 07 08 09 10 11")).toBeVisible();
     await expect(tid(page, "cart-count")).toHaveCount(0);
 
@@ -126,6 +126,17 @@ test.describe("panier et commande", () => {
     await page.goto("/panier");
     await expect(page.getByRole("heading", { name: "Votre panier est vide" })).toBeVisible();
     await expect(page.getByRole("link", { name: /Découvrir le catalogue/ })).toBeVisible();
+  });
+
+  test("les photos réelles sont servies et créditées", async ({ page }) => {
+    await page.goto("/produits/apple-iphone-15-128go");
+    const img = page.getByRole("img", { name: "Apple iPhone 15 128 Go" }).first();
+    await expect(img).toBeVisible();
+    expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    await expect(page.getByText(/via Wikimedia Commons/)).toBeVisible();
+    await page.goto("/credits");
+    await expect(page.getByRole("heading", { name: "Crédits photos" })).toBeVisible();
+    await expect(page.getByText(/^Auteur :/)).toHaveCount(29);
   });
 
   test("les en-têtes de sécurité sont présents", async ({ request }) => {
