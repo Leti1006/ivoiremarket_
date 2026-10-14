@@ -21,9 +21,9 @@ if (!externalUrl) {
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
-  // En local (portable Windows), un seul navigateur à la fois évite la
-  // contention CPU qui faisait expirer des tests pourtant rapides (< 1 s).
-  workers: process.env.CI ? 2 : 1,
+  // Un seul navigateur à la fois (en local comme en CI) : en parallèle, la
+  // contention CPU faisait expirer des tests pourtant rapides (< 1 s).
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   expect: { timeout: 10_000 },
   reporter: [["list"]],
