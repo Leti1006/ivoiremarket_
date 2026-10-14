@@ -49,3 +49,8 @@ next-env.d.ts
 *.key
 *.ppk
 .aws/
+
+# base de données locale
+/data/
+/.e2e-data/
+!.env.example

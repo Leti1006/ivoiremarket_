@@ -34,6 +34,13 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Ne pas annoncer la technologie du serveur dans l'en-tête X-Powered-By.
   poweredByHeader: false,
+  // Les photos sont optimisées une fois pour toutes, à l'avance (WebP en
+  // 600 px et 1200 px) : le serveur n'a aucun encodage d'image à faire, ce
+  // qui compte sur une petite instance (t3.micro). L'optimiseur intégré est
+  // donc désactivé (il ralentissait fortement le serveur lors des tests).
+  images: {
+    unoptimized: true,
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
