@@ -4,10 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { AddToCart } from "@/features/cart/components/add-to-cart";
 import { CartLink } from "@/features/cart/components/cart-link";
-import { getProductBySlug } from "@/features/products/queries";
+import { seedProducts } from "@/data/seed-products";
 
 function product(slug: string) {
-  const p = getProductBySlug(slug);
+  const p = seedProducts.find((x) => x.slug === slug);
   if (!p) throw new Error(slug);
   return p;
 }
@@ -18,7 +18,7 @@ describe("<AddToCart />", () => {
     render(
       <>
         <CartLink />
-        <AddToCart product={product("jbl-tune-520bt")} />
+        <AddToCart product={product("casque-jbl-synchros-e50bt")} />
       </>,
     );
 
@@ -34,9 +34,10 @@ describe("<AddToCart />", () => {
 
   it("limite la quantité au stock disponible", async () => {
     const user = userEvent.setup();
-    // Apple MacBook Air M3 : 2 en stock.
-    render(<AddToCart product={product("apple-macbook-air-m3")} />);
+    // Apple MacBook Air M2 : 3 en stock.
+    render(<AddToCart product={product("apple-macbook-air-m2")} />);
     const plus = screen.getByRole("button", { name: "Augmenter la quantité" });
+    await user.click(plus);
     await user.click(plus);
     expect(plus).toBeDisabled();
     await user.click(screen.getByRole("button", { name: /ajouter au panier/i }));
@@ -44,7 +45,7 @@ describe("<AddToCart />", () => {
   });
 
   it("affiche un message pour un produit en rupture", () => {
-    render(<AddToCart product={product("xiaomi-redmi-note-13")} />);
+    render(<AddToCart product={product("xiaomi-redmi-note-14-pro-plus")} />);
     expect(screen.getByText(/en rupture de stock/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /ajouter au panier/i })).not.toBeInTheDocument();
   });

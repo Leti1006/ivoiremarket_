@@ -17,7 +17,7 @@ import {
   parseCatalogSearch,
   type CatalogFilters,
 } from "@/features/products/filters";
-import { getAllProducts } from "@/features/products/queries";
+import { getCatalog } from "@/server/catalog";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -31,7 +31,7 @@ export default function CataloguePage({ searchParams }: PageProps<"/catalogue">)
     <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
       <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">Catalogue</h1>
       <p className="mt-1 text-muted">
-        Catalogue de démonstration : prix et stocks fictifs, affichés en francs CFA.
+        Smartphones, ordinateurs, audio, accessoires et réseau. Prix affichés en francs CFA.
       </p>
       {/* Les paramètres d'URL sont des données de requête : on les lit dans
           un composant enveloppé par Suspense (exigence de Cache Components). */}
@@ -44,7 +44,7 @@ export default function CataloguePage({ searchParams }: PageProps<"/catalogue">)
 
 async function CatalogResults({ searchParams }: Pick<PageProps<"/catalogue">, "searchParams">) {
   const filters = parseCatalogSearch(await searchParams);
-  const results = filterProducts(getAllProducts(), filters);
+  const results = filterProducts(await getCatalog(), filters);
   const activeCount = [
     filters.q,
     filters.categorie,

@@ -2,12 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Compass } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
+import { DemoBanner } from "@/components/layout/demo-banner";
 import { SearchForm } from "@/components/layout/search-form";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 
 export const metadata: Metadata = { title: "Page introuvable" };
 
 export default function NotFound() {
+  // La page 404 est rendue hors du groupe (boutique) : on ajoute l'habillage ici.
   return (
+    <>
+      <DemoBanner />
+      <SiteHeader />
+      <main id="contenu" className="flex-1">
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center">
       <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-50 text-accent-600">
         <Compass className="h-8 w-8" aria-hidden="true" />
@@ -26,5 +34,8 @@ export default function NotFound() {
         <Link href="/catalogue" className={buttonClasses({ variant: "outline" })}>Voir le catalogue</Link>
       </div>
     </div>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

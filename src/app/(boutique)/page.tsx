@@ -1,17 +1,14 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ArrowRight, Banknote, ShieldCheck, Tags, Truck } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { categories } from "@/data/categories";
 import { FREE_DELIVERY_THRESHOLD } from "@/data/delivery-zones";
 import { CATEGORY_ICONS } from "@/features/products/components/category-icon";
 import { ProductGrid } from "@/features/products/components/product-card";
-import { ProductVisual } from "@/features/products/components/product-visual";
-import {
-  countByCategory,
-  getFeaturedProducts,
-  getProductBySlug,
-  getPromotions,
-} from "@/features/products/queries";
+import { ProductPhoto } from "@/features/products/components/product-photo";
+import { countByCategory, getFeaturedProducts, getPromotions } from "@/features/products/queries";
+import { getCatalog } from "@/server/catalog";
 import { formatPrice } from "@/lib/format";
 
 const ADVANTAGES = [
@@ -58,14 +55,14 @@ function SectionHeading({ title, subtitle, href, linkLabel }: {
   );
 }
 
-export default function HomePage() {
-  const featured = getFeaturedProducts(8);
-  const promotions = getPromotions(4);
-  const counts = countByCategory();
-  const heroProducts = ["apple-macbook-air-m3", "samsung-galaxy-a55-128go", "jbl-tune-520bt"]
-    .map(getProductBySlug)
-    .filter((p) => p !== undefined);
+// Photos de la bannière (décoratives) : elles ne dépendent pas de la base.
+const HERO_PHOTOS = [
+  { name: "MacBook Air M2", category: "ordinateurs", image: "apple-macbook-air-m2" },
+  { name: "Samsung Galaxy A55", category: "smartphones", image: "samsung-galaxy-a55" },
+  { name: "Casque Sony WH-1000XM3", category: "ecouteurs", image: "sony-wh-1000xm3" },
+] as const;
 
+export default function HomePage() {
   return (
     <>
       {/* --- Bannière principale --- */}
@@ -104,17 +101,58 @@ export default function HomePage() {
           </div>
 
           <div className="relative mx-auto grid w-full max-w-md grid-cols-2 gap-4 lg:max-w-lg" aria-hidden="true">
-            {heroProducts[0] && (
-              <ProductVisual product={heroProducts[0]} size="lg" className="col-span-2 aspect-[16/10] shadow-lift" />
-            )}
-            {heroProducts.slice(1).map((p) => (
-              <ProductVisual key={p.id} product={p} className="shadow-lift" />
+            <ProductPhoto
+              product={HERO_PHOTOS[0]}
+              sizes="(min-width: 1024px) 512px, 90vw"
+              preload
+              variant="full"
+              className="col-span-2 aspect-[16/10] bg-white shadow-lift"
+            />
+            {HERO_PHOTOS.slice(1).map((p) => (
+              <ProductPhoto key={p.image} product={p} sizes="(min-width: 1024px) 250px, 45vw" className="bg-white shadow-lift" />
             ))}
           </div>
         </div>
       </section>
 
       <div className="mx-auto max-w-7xl space-y-16 px-4 py-14 sm:space-y-20">
+        {/* Les sections suivantes lisent la base : elles arrivent en streaming. */}
+        <Suspense fallback={<SectionsSkeleton />}>
+          <CatalogSections />
+        </Suspense>
+
+        {/* --- Avantages --- */}
+        <section aria-labelledby="avantages-title">
+          <h2 id="avantages-title" className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+            Pourquoi commander sur IvoireMarket ?
+          </h2>
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {ADVANTAGES.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="rounded-2xl border border-line bg-card p-5 shadow-card">
+                <Icon className="h-6 w-6 text-accent-600" aria-hidden="true" />
+                <h3 className="mt-3 font-semibold text-ink">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-muted">
+            Conditions de démonstration : ces engagements décrivent le fonctionnement simulé de la
+            boutique et ne correspondent à aucun service commercial réel.
+          </p>
+        </section>
+      </div>
+    </>
+  );
+}
+
+async function CatalogSections() {
+  const catalog = await getCatalog();
+  const featured = getFeaturedProducts(catalog, 8);
+  const promotions = getPromotions(catalog, 4);
+  const counts = countByCategory(catalog);
+
+  return (
+    <>
         {/* --- Catégories --- */}
         <section>
           <SectionHeading title="Nos catégories" subtitle="Tout l'équipement numérique, au même endroit." />
@@ -158,33 +196,31 @@ export default function HomePage() {
         <section className="rounded-3xl bg-accent-50 p-5 sm:p-8">
           <SectionHeading
             title="Promotions"
-            subtitle="Offres de démonstration : les prix barrés sont fictifs."
+            subtitle="Offres du moment (démonstration : les prix barrés sont fictifs)."
             href="/catalogue?tri=prix-asc"
             linkLabel="Voir les petits prix"
           />
           <ProductGrid products={promotions} />
         </section>
 
-        {/* --- Avantages --- */}
-        <section aria-labelledby="avantages-title">
-          <h2 id="avantages-title" className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            Pourquoi commander sur IvoireMarket ?
-          </h2>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {ADVANTAGES.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="rounded-2xl border border-line bg-card p-5 shadow-card">
-                <Icon className="h-6 w-6 text-accent-600" aria-hidden="true" />
-                <h3 className="mt-3 font-semibold text-ink">{title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-xs text-muted">
-            Conditions de démonstration : ces engagements décrivent le fonctionnement simulé de la
-            boutique et ne correspondent à aucun service commercial réel.
-          </p>
-        </section>
-      </div>
     </>
+  );
+}
+
+function SectionsSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Chargement des produits">
+      <div className="h-8 w-56 animate-pulse rounded-lg bg-line/60" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-28 animate-pulse rounded-2xl bg-line/60" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-line/60" />
+        ))}
+      </div>
+    </div>
   );
 }

@@ -5,7 +5,7 @@ import { ShoppingBag } from "lucide-react";
 import { useCart } from "../use-cart";
 
 export function CartLink() {
-  const { count } = useCart();
+  const { storedCount: count } = useCart();
   const label = count > 0 ? `Panier, ${count} article${count > 1 ? "s" : ""}` : "Panier vide";
 
   return (

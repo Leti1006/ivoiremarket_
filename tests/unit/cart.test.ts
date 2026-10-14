@@ -10,7 +10,9 @@ import {
   setQuantity,
 } from "@/features/cart/cart-logic";
 import { CART_STORAGE_KEY, getCartSnapshot, parseStoredCart, writeCart } from "@/features/cart/cart-store";
-import { getProductById } from "@/features/products/queries";
+import { seedProducts } from "@/data/seed-products";
+
+const getProductById = (id: string) => seedProducts.find((p) => p.id === id);
 
 const phone = { id: "p-001", stock: 12 }; // 259 000 FCFA
 const iphone = { id: "p-004", stock: 4 }; // 649 000 FCFA

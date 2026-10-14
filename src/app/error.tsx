@@ -12,7 +12,7 @@ export default function ErrorPage({ error, retry }: { error: Error & { digest?: 
   }, [error]);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center">
+    <main id="contenu" className="mx-auto flex max-w-2xl flex-1 flex-col items-center px-4 py-20 text-center">
       <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-danger-50 text-danger">
         <TriangleAlert className="h-8 w-8" aria-hidden="true" />
       </span>
@@ -24,6 +24,6 @@ export default function ErrorPage({ error, retry }: { error: Error & { digest?: 
         <button type="button" onClick={() => retry()} className={buttonClasses()}>Réessayer</button>
         <Link href="/" className={buttonClasses({ variant: "outline" })}>Accueil</Link>
       </div>
-    </div>
+    </main>
   );
 }

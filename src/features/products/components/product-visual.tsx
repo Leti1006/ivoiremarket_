@@ -1,11 +1,24 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import type { Product, ProductShape } from "@/types/product";
+import type { CategoryId } from "@/types/product";
+
+type ProductShape =
+  | "phone" | "laptop" | "headphones" | "earbuds" | "charger" | "powerbank" | "cable"
+  | "mouse" | "keyboard" | "monitor" | "printer" | "router" | "storage";
+
+/** Forme dessinée pour chaque catégorie lorsqu'aucune photo n'est disponible. */
+const CATEGORY_SHAPE: Record<CategoryId, ProductShape> = {
+  smartphones: "phone",
+  ordinateurs: "laptop",
+  ecouteurs: "headphones",
+  accessoires: "powerbank",
+  peripheriques: "mouse",
+  reseau: "router",
+};
 
 /**
- * Illustration vectorielle d'un produit.
- * Le catalogue étant fictif, on dessine des visuels cohérents plutôt que
- * d'utiliser des photos de marques soumises au droit d'auteur.
+ * Illustration vectorielle de secours, utilisée quand un produit n'a pas
+ * (encore) de photo, par exemple un produit créé dans l'administration.
  */
 
 const OUTLINE = "rgb(19 32 26 / 0.18)";
@@ -178,7 +191,7 @@ export function ProductVisual({
   className,
   size = "md",
 }: {
-  product: Pick<Product, "name" | "visual">;
+  product: { name: string; category: CategoryId };
   className?: string;
   size?: "sm" | "md" | "lg";
 }) {
@@ -215,7 +228,7 @@ export function ProductVisual({
             <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {shapes[product.visual.shape](product.visual.color, ids)}
+        {shapes[CATEGORY_SHAPE[product.category]]("#3b4a43", ids)}
       </svg>
     </div>
   );

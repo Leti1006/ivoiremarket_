@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getCategory } from "@/data/categories";
 import type { Product } from "@/types/product";
 import { PriceTag } from "./price-tag";
-import { ProductVisual } from "./product-visual";
+import { ProductPhoto } from "./product-photo";
 import { StockBadge } from "./stock-badge";
 
 export function ProductCard({ product }: { product: Product }) {
@@ -15,10 +15,14 @@ export function ProductCard({ product }: { product: Product }) {
       className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-card transition-shadow hover:shadow-lift"
     >
       <div className="relative p-3 pb-0">
-        <ProductVisual product={product} className="transition-transform duration-300 group-hover:scale-[1.02]" />
+        <ProductPhoto
+          product={product}
+          sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, 46vw"
+          className="transition-transform duration-300 group-hover:scale-[1.02]"
+        />
         {isPromo && (
           <span className="absolute left-5 top-5 rounded-lg bg-accent-500 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">
-            Promo démo
+            Promo
           </span>
         )}
       </div>

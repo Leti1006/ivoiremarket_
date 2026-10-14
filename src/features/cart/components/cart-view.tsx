@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { ArrowRight, ShoppingBag, Trash2 } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
-import { ProductVisual } from "@/features/products/components/product-visual";
+import { ProductPhoto } from "@/features/products/components/product-photo";
 import { formatPrice } from "@/lib/format";
+import type { ProductSummary } from "@/types/product";
 import { useHydrated } from "@/lib/use-hydrated";
 import { maxQuantityFor } from "../cart-logic";
 import { useCart } from "../use-cart";
 import { OrderSummary } from "./order-summary";
 import { QuantityStepper } from "./quantity-stepper";
 
-export function CartView() {
+export function CartView({ catalog }: { catalog: ProductSummary[] }) {
   const hydrated = useHydrated();
-  const { lines, count, subtotal, update, remove } = useCart();
+  const { lines, count, subtotal, update, remove } = useCart(catalog);
 
   if (!hydrated) {
     return (
@@ -48,7 +49,7 @@ export function CartView() {
         {lines.map(({ product, quantity, lineTotal }) => (
           <li key={product.id} data-testid="cart-line" className="flex gap-4 p-4 sm:p-5">
             <Link href={`/produits/${product.slug}`} className="w-20 shrink-0 sm:w-28" tabIndex={-1} aria-hidden="true">
-              <ProductVisual product={product} size="sm" />
+              <ProductPhoto product={product} sizes="112px" rounded="xl" />
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
