@@ -2,7 +2,7 @@
 
 Boutique en ligne **de démonstration** spécialisée dans l'électronique et le high-tech en Côte d'Ivoire, réalisée dans le cadre d'un projet universitaire de cloud computing.
 
-L'application est développée avec Next.js et TypeScript, conteneurisée avec Docker, publiée sur Docker Hub (`leti1006/ivoiremarket:v1`) et déployée sur une instance AWS EC2 par simple `docker pull`.
+L'application est développée avec Next.js et TypeScript, conteneurisée avec Docker, publiée sur Docker Hub (`leti1006/ivoiremarket:v1`, puis `v2`) et déployée sur une instance AWS EC2 par simple `docker pull`.
 
 🌐 **Application en ligne : http://13.60.255.43** (instance AWS EC2, région eu-north-1).
 
@@ -182,9 +182,9 @@ BASE_URL=http://localhost:8080 npm run test:e2e
 
 Couverture des tests :
 
-- **Unitaires (41)** : formatage FCFA, validation des paramètres d'URL, recherche, filtres et tri, logique du panier (stock, quantité maximale, totaux), stockage corrompu, validation du téléphone ivoirien, calcul de commande, Server Action (prix client ignorés, panier vide).
+- **Unitaires (52)** : formatage FCFA, paramètres d'URL, recherche, filtres et tri, logique du panier, stockage corrompu, téléphone ivoirien, calcul et enregistrement de commande (stock décrémenté, prix client ignorés, stock insuffisant sans effet), base SQLite (CRUD produits, cycle de vie des commandes, remise en stock), formulaire produit, sessions signées (falsification, expiration), limitation des tentatives.
 - **Composants** : ajout au panier, compteur de l'en-tête, limite de stock, produit en rupture.
-- **E2E (Playwright, desktop et mobile)** : recherche, filtres et tri, résultat vide, 404, menu mobile, parcours complet panier → commande → confirmation, en-têtes de sécurité.
+- **E2E (25, Playwright, desktop et mobile)** : recherche, filtres et tri, résultat vide, 404, menu mobile, parcours complet panier → commande → confirmation, photos et crédits, en-têtes de sécurité ; administration : redirection sans session, mauvais mot de passe, création / modification / suppression d'un produit visible dans la boutique, traitement d'une commande de bout en bout.
 
 ## 8. Build de production
 
@@ -288,7 +288,22 @@ ssh -i ~/.ssh/ivoiremarket-key.pem ubuntu@<IP_PUBLIQUE_EC2> "chmod +x ec2-deploy
 
 Enfin, ouvrir `http://<IP_PUBLIQUE_EC2>` dans un navigateur.
 
-### 11.4 Déploiement réellement effectué
+### 11.4 Mise à jour vers la v2 (effectuée)
+
+```bash
+# Poste local : construire, tester (25 tests E2E contre le conteneur), publier
+docker build -t leti1006/ivoiremarket:v2 .
+docker push leti1006/ivoiremarket:v2
+# Serveur EC2 : télécharger et relancer (aucun build)
+scp -i ~/.ssh/ivoiremarket_ed25519 deploy/ec2-deploy.sh ubuntu@13.60.255.43:~
+ssh -i ~/.ssh/ivoiremarket_ed25519 ubuntu@13.60.255.43 "./ec2-deploy.sh leti1006 v2"
+```
+
+Vérifié après déploiement : empreinte de l'image sur EC2 identique à celle publiée (`sha256:bd5ff7f9…`), conteneur `healthy` sous l'utilisateur `nextjs`, fichier de secrets `~/ivoiremarket.env` en droits `600`, base dans le volume `ivoiremarket-data`, `/admin` redirigé vers la connexion, port 3000 fermé. Sur l'adresse publique : 17 tests boutique (ceux qui ne créent pas de commande, pour ne pas polluer les données) et une connexion administrateur en lecture seule.
+
+Les identifiants administrateur de production se lisent sur le serveur : `ssh … "cat ~/ivoiremarket.env"`. Ils ne sont ni dans Git, ni dans l'image, ni dans ce README.
+
+### 11.5 Premier déploiement (v1)
 
 | Élément | Valeur |
 |---|---|
@@ -377,6 +392,9 @@ Un assistant IA (Claude Code) a été utilisé pour générer et vérifier une p
 | Tableau de bord admin bloqué sur « chargement » | Next 16 interdit `Date.now()` pendant un pré-rendu ; la vérification d'expiration de session l'utilisait | `await connection()` avant la vérification : elle a lieu à chaque requête |
 | Tests E2E très lents, navigations expirées | L'encodage des images en AVIF saturait le CPU du serveur | Format WebP uniquement (les photos source sont déjà en WebP) |
 | Déplacement de dossiers refusé (`Permission denied`) | Le serveur de développement verrouillait les fichiers (Windows) | Arrêt du serveur avant de réorganiser les routes |
+| SSH vers EC2 bloqué (timeout) lors de la mise à jour v2 | L'IP publique du poste avait changé ; la règle SSH n'autorisait que l'ancienne | Règle du groupe de sécurité mise à jour (nouvelle IP /32, ancienne retirée) |
+| Script de déploiement en échec (`unbound variable`) | Une apostrophe dans `${1:?…}` ouvrait une chaîne et décalait tout le script | Message sans apostrophe, vérification avec `bash -n` |
+| `docker push` refusé (`insufficient_scope`) | Session Docker Hub perdue au redémarrage de Docker Desktop | Reconnexion dans Docker Desktop |
 | _à compléter par le groupe_ | | |
 
 ## 17. Procédure de démonstration

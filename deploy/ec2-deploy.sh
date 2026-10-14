@@ -16,7 +16,9 @@
 # =============================================================================
 set -euo pipefail
 
-DOCKERHUB_USER="${1:?Indiquez votre nom d'utilisateur Docker Hub}"
+# (Pas d'apostrophe dans ce message : dans ${...:?...}, bash l'interpréterait
+#  comme le début d'une chaîne entre apostrophes.)
+DOCKERHUB_USER="${1:?Usage : ./ec2-deploy.sh UTILISATEUR_DOCKERHUB [tag]}"
 TAG="${2:-v2}"
 IMAGE="${DOCKERHUB_USER}/ivoiremarket:${TAG}"
 CONTAINER="ivoiremarket"
