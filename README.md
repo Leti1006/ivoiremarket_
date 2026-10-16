@@ -30,7 +30,7 @@ L'application est développée avec Next.js et TypeScript, conteneurisée avec D
 16. [Difficultés rencontrées et solutions](#16-difficultés-rencontrées-et-solutions)
 17. [Procédure de démonstration](#17-procédure-de-démonstration)
 
-Voir aussi : [docs/COMMANDES.md](docs/COMMANDES.md) (aide-mémoire des commandes).
+Voir aussi : [docs/COMMANDES.md](docs/COMMANDES.md) (aide-mémoire des commandes) et [docs/SOUTENANCE.md](docs/SOUTENANCE.md) (préparation de la soutenance).
 
 ---
 
