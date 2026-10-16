@@ -372,7 +372,7 @@ Améliorations possibles : HTTPS (nom de domaine + Nginx/Caddy ou un Load Balanc
 | Membre | Responsabilités | Commits principaux |
 |---|---|---|
 | Leti Ouattara | Application Next.js (catalogue, panier, commande), tests, Dockerfile, publication Docker Hub | _à compléter_ |
-| [@asaphfelix03-bip](https://github.com/asaphfelix03-bip) | _à compléter_ | _à compléter_ |
+| [Asaph Felix (@asaphfelix03-beep)](https://github.com/asaphfelix03-beep) | _à compléter_ | _à compléter_ |
 
 Un assistant IA (Claude Code) a été utilisé pour générer et vérifier une partie du code et de la documentation. Chaque membre a relu, compris et versionné sa partie.
 
